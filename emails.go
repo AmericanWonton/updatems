@@ -3,14 +3,21 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/gmail/v1"	"google.golang.org/api/option"
+	"google.golang.org/api/gmail/v1"
+	"google.golang.org/api/option"
 )
 
+/* INFORMATION FOR OUR EMAIL VARIABLES */
+var senderAddress string
+var senderPWord string
 
 var GmailService *gmail.Service //This gets initialized in init
 
@@ -57,7 +64,7 @@ func OAuthGmailService() {
 	}
 }
 
-func sendEmail(w http.ResponseWriter, r *http.Request){
+func sendEmail(w http.ResponseWriter, r *http.Request) {
 	//Get the byte slice from the JSON
 	bs, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -65,68 +72,53 @@ func sendEmail(w http.ResponseWriter, r *http.Request){
 		logWriter(err.Error())
 	}
 
-	//Declare DataType from Ajax
+	//Declare return information for JSON
+	type ReturnMessage struct {
+		TheErr     string `json:"TheErr"`
+		ResultMsg  string `json:"ResultMsg"`
+		SuccOrFail int    `json:"SuccOrFail"`
+	}
+	theReturnMessage := ReturnMessage{}
+
+	//Declare DataType from JSON
 	type EmailInfo struct {
-		EmailString string `json:"EmailString"`
+		EmailMessage string `json:"EmailString"`
+		EmailAddress string `json:"EmailAddressString"`
+		EmailSubject string `json:"EmailSubject"`
 	}
 
 	//Marshal the user data into our type
 	var dataEmail EmailInfo
 	json.Unmarshal(bs, &dataEmail)
-}
-
-//Attempts to send an email to User
-func signUpUserEmail(theEmail string, theRole string, fName string, lName string) bool {
-	goodEmailSend := true
-	theMessage := "Hello " + fName + " " + lName + ", thank you for visiting my site!\n" +
-		"Please enjoy the new " + theRole + " role you created. Depending on that role, you might " +
-		"be limited to certain features. Be respectable and have fun!"
-	theSubject := "Welcome to SuperDBTester3000"
 
 	var message gmail.Message
 
-	emailTo := "To: " + theEmail + "\r\n"
-	subject := "Subject: " + theSubject + "\n"
+	emailTo := "To: " + dataEmail.EmailMessage + "\r\n"
+	subject := "Subject: " + dataEmail.EmailSubject + "\n"
 	mime := "MIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n"
-	msg := []byte(emailTo + subject + mime + "\n" + theMessage)
+	msg := []byte(emailTo + subject + mime + "\n" + dataEmail.EmailMessage)
 
 	message.Raw = base64.URLEncoding.EncodeToString(msg)
 
 	// Send the message
-	_, err := GmailService.Users.Messages.Send("me", &message).Do()
+	_, err = GmailService.Users.Messages.Send("me", &message).Do()
 	if err != nil {
 		errMsg := "Error sending this message to the User: " + err.Error()
+		theReturnMessage.TheErr = errMsg
+		theReturnMessage.ResultMsg = errMsg
+		theReturnMessage.SuccOrFail = 1
 		fmt.Println(errMsg)
 		logWriter(errMsg)
-		goodEmailSend = false
+	} else {
+		theReturnMessage.TheErr = ""
+		theReturnMessage.ResultMsg = "Succussfully sent email to: " + dataEmail.EmailAddress
+		theReturnMessage.SuccOrFail = 0
 	}
 
-	return goodEmailSend
-}
-
-func emailToMe(theEmail UserJSON) bool {
-	goodEmailSend := true
-	theMessage := theEmail.TheName + " has a message for you for SuperDBWebApp.\n" +
-		theEmail.TheMessage + "\nYou can contact him here: " + theEmail.TheEmail
-	theSubject := "SuperDBTester3000 questions"
-
-	var message gmail.Message
-
-	emailTo := "To: " + senderAddress + "\r\n"
-	subject := "Subject: " + theSubject + "\n"
-	mime := "MIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n"
-	msg := []byte(emailTo + subject + mime + "\n" + theMessage)
-
-	message.Raw = base64.URLEncoding.EncodeToString(msg)
-
-	// Send the message
-	_, err := GmailService.Users.Messages.Send("me", &message).Do()
+	theJSONMessage, err := json.Marshal(theReturnMessage)
 	if err != nil {
-		errMsg := "Error sending this message to the User: " + err.Error()
-		fmt.Println(errMsg)
-		logWriter(errMsg)
-		goodEmailSend = false
+		fmt.Println(err)
+		logWriter(err.Error())
 	}
-
-	return goodEmailSend
+	fmt.Fprint(w, string(theJSONMessage))
 }

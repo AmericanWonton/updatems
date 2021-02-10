@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-
+	OAuthGmailService() //Initialize Gmail Services
 }
 
 func logWriter(logMessage string) {

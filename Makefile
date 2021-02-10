@@ -5,27 +5,27 @@ gomod-exp:
 	export GO111MODULE=on
 
 gobuild:
-	GOOS=linux GOARCH=amd64 go build -o superdbbinary
+	GOOS=linux GOARCH=amd64 go build -o update
 dockerbuild:
-	docker build -t suberdb .
+	docker build -t update .
 dockerbuildandpush:
-	docker build -t suberdb .
-	docker tag suberdb americanwonton/suberdb
-	docker push americanwonton/suberdb
+	docker build -t update .
+	docker tag update americanwonton/update
+	docker push americanwonton/update
 dockerrun:
-	docker run -it -p 80:80 suberdb
+	docker run -it -p 80:80 update
 dockerrundetached:
-	docker run -d -p 80:80 suberdb
+	docker run -d -p 80:80 update
 dockerrunitvolume:
-	docker run -it -p 80:80 -v photo-images:/static/images suberdb
+	docker run -it -p 80:80 -v photo-images:/static/images update
 dockerrundetvolume:
-	docker run -d -p 80:80 -v photo-images:/static/images suberdb
+	docker run -d -p 80:80 -v photo-images:/static/images update
 dockertagimage:
-	docker tag suberdb americanwonton/suberdb
+	docker tag update americanwonton/update
 dockerimagepush:
-	docker push americanwonton/suberdb
+	docker push americanwonton/update
 dockerallpush:
-	docker tag suberdb americanwonton/suberdb
-	docker push americanwonton/suberdb
+	docker tag update americanwonton/update
+	docker push americanwonton/update
 dockerseeshell:
-	docker run -it suberdb sh
+	docker run -it update sh
