@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -15,6 +16,7 @@ import (
 )
 
 func init() {
+	getCreds()
 	OAuthGmailService() //Initialize Gmail Services
 }
 
@@ -36,17 +38,50 @@ func logWriter(logMessage string) {
 	log.Println(logMessage)
 }
 
+func getCreds() {
+	file, err := os.Open("security/thecreds.txt")
+
+	if err != nil {
+		fmt.Printf("Trouble opening file for Amazon Credentials: %v\n", err.Error())
+	}
+
+	scanner := bufio.NewScanner(file)
+
+	scanner.Split(bufio.ScanLines)
+	var text []string
+
+	for scanner.Scan() {
+		text = append(text, scanner.Text())
+	}
+
+	file.Close()
+
+	senderAddress = text[0]
+	senderPWord = text[1]
+	theClientID = text[2]
+	theClientSecret = text[3]
+	theAccessToken = text[4]
+	theRefreshToken = text[5]
+	accountSid = text[6]
+	authToken = text[7]
+	accountNum = text[8]
+}
+
 //Handles all requests coming in
 func handleRequests() {
 	myRouter := mux.NewRouter().StrictSlash(true)
 
+	//API for serving items
+	myRouter.HandleFunc("/sendEmail", sendEmail).Methods("POST")             //Send Email to User
+	myRouter.HandleFunc("/sendTextMessage", sendTextMessage).Methods("POST") //Send text to user
 	//API Checking Stuff
-	myRouter.HandleFunc("/testPing", testPing).Methods("POST") //Get food information for User
+	myRouter.HandleFunc("/testPing", testPing).Methods("POST") //Test ping for this service
 	log.Fatal(http.ListenAndServe(":80", myRouter))
 }
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano()) //Randomly Seed
+
 	//Handle Requests
 	handleRequests()
 }

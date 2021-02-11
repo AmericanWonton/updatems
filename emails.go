@@ -60,6 +60,7 @@ func OAuthGmailService() {
 	GmailService = srv
 	if GmailService != nil {
 		succMsg := "Email service is initialized"
+		fmt.Printf("DEBUG: Email service initialized.\n")
 		logWriter(succMsg)
 	}
 }
@@ -91,9 +92,11 @@ func sendEmail(w http.ResponseWriter, r *http.Request) {
 	var dataEmail EmailInfo
 	json.Unmarshal(bs, &dataEmail)
 
+	fmt.Printf("DEBUG: Got pinged and here's the JSON: %v\n", dataEmail)
+
 	var message gmail.Message
 
-	emailTo := "To: " + dataEmail.EmailMessage + "\r\n"
+	emailTo := "To: " + dataEmail.EmailAddress + "\r\n"
 	subject := "Subject: " + dataEmail.EmailSubject + "\n"
 	mime := "MIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n"
 	msg := []byte(emailTo + subject + mime + "\n" + dataEmail.EmailMessage)
@@ -115,6 +118,7 @@ func sendEmail(w http.ResponseWriter, r *http.Request) {
 		theReturnMessage.SuccOrFail = 0
 	}
 
+	//Return JSON
 	theJSONMessage, err := json.Marshal(theReturnMessage)
 	if err != nil {
 		fmt.Println(err)
